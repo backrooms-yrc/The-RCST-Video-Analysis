@@ -1,7 +1,7 @@
-\# The-RCST-Video-Analysis
+## The-RCST-Video-Analysis
 一个开箱即用的 VIP 影视解析网站模版，功能强大、UI 精美、持续更新。（UI 界面由 GPT-5 深度美化）
 
-\# 配置教程
+## 配置教程
 
 **1. 环境准备**  
 需要 Nginx 环境，推荐版本为 **1.18**
