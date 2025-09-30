@@ -11,7 +11,7 @@
 
 **3. 配置接口防盗**  
 在 Nginx 配置文件中添加以下内容：
-\`\`\`nginx
+```nginx
 location /assets/js/ {
     # 只允许 index.html 加载
     valid_referers none blocked yourdomain.com;
@@ -19,4 +19,4 @@ location /assets/js/ {
         return 404;
     }
 }
-\`\`\`
+```
