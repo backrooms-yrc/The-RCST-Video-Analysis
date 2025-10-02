@@ -23,6 +23,7 @@ location /assets/js/ {
     }
 }
 ```
+⚠️警告：请务必将`yourdomain.com`替换为您的实际域名！
 
 ## 添加接口
 
