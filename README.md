@@ -178,4 +178,4 @@ Safari 原生支持；其余浏览器由 hls.js 接管。仍失败时查看控�
 
 ---
 
-版权所有 © 2025 Current Video Analysis · [The RCST 主站枢纽](https://rcst20.dpdns.org)
+版权所有 © 2025 Current Video Analysis

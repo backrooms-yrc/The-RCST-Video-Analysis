@@ -170,7 +170,6 @@
     }
 
     /* ===== 页脚 ===== */
-    .hub-link{display:flex;justify-content:center;margin:20px 0 16px}
     .footer-card{padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:14px}
     .footer-socials{display:flex;gap:8px}
     .social-link{
@@ -217,14 +216,13 @@
     <mdui-button-icon id="theme-toggle" aria-label="切换深浅色" title="切换深浅色主题">
       <mdui-icon name="dark_mode"></mdui-icon>
     </mdui-button-icon>
-    <mdui-button-icon icon="device_hub" href="https://rcst20.dpdns.org" target="_blank" rel="noopener" aria-label="主站枢纽" title="The RCST 主站（分站总枢纽）"></mdui-button-icon>
   </mdui-top-app-bar>
 
   <mdui-layout-main class="page">
     <!-- ===== 公告条（可折叠） ===== -->
     <div class="announcement" id="announcement" role="status" aria-live="polite">
       <mdui-icon name="campaign" class="ann-icon" aria-hidden="true"></mdui-icon>
-      <div class="text">📣 公告：欢迎来到 <strong>Current Video Analysis</strong>！当前搜索可能有卡顿，我们会持续优化播放速度。枢纽站：<a href="https://rcst20.dpdns.org" style="text-decoration:none">点击跳转</a></div>
+      <div class="text">📣 公告：欢迎来到 <strong>Current Video Analysis</strong>！当前搜索可能有卡顿，我们会持续优化播放速度。</div>
       <button id="announcement-toggle" class="ann-toggle" aria-label="折叠公告" title="折叠公告">
         <span class="material-icons" aria-hidden="true">close</span>
       </button>
@@ -318,13 +316,6 @@
           <div class="small">• 如仍无法播放，请联系管理员：ruochenyang161@gmail.com</div>
         </mdui-card>
       </aside>
-    </div>
-
-    <!-- ===== 主站跳转 ===== -->
-    <div class="hub-link">
-      <mdui-button variant="tonal" href="https://rcst20.dpdns.org" target="_blank" rel="noopener">
-        <span class="material-icons" slot="icon" aria-hidden="true">open_in_new</span>点击跳转到 The RCST 主站（分站总枢纽）
-      </mdui-button>
     </div>
 
     <!-- ===== 页脚 ===== -->
