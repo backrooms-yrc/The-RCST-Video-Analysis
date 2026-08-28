@@ -66,12 +66,12 @@ npx http-server -p 8000
 
 ```js
 const parsers = [
-  { name: "接口1·虾米（高清稳定，首选）",     url: "https://jx.xmflv.com/?url=%s" },
-  { name: "接口2·M1907（支持 m3u8/mp4 直链）", url: "https://z1.m1907.top/?jx=%s" },
-  { name: "接口3·夜幕聚合（自动选择最优线路）", url: "https://www.yemu.xyz/?url=%s" },
-  { name: "接口4·臻享视听（已修复DNS劫持，本站中转）", url: "/jx/aibox/?url=%s" },
-  { name: "接口5·七七云解析（WASM解码）",     url: "https://jx.77flv.cc/?url=%s" },
-  // { name: "新接口", url: "https://example.com/?url=%s" }
+  { name: "接口1·虾米（本站中转）",  url: "/jx/xmflv/?url=%s" },
+  { name: "接口2·M1907（本站中转，支持 m3u8/mp4 直链）", url: "/jx/m1907/?jx=%s" },
+  { name: "接口3·七七云解析（本站中转）", url: "/jx/77flv/?url=%s" },
+  { name: "接口4·臻享视听（本站中转）", url: "/jx/aibox/?url=%s" },
+  { name: "接口5·ik9云解析（本站中转）", url: "/jx/ik9/?url=%s" },
+  // { name: "新接口", url: "/jx/xxx/?url=%s" }
 ];
 ```
 
@@ -81,23 +81,28 @@ const parsers = [
 - 接入前请确认目标站无 `X-Frame-Options: DENY` / CSP `frame-ancestors` 限制，否则 iframe 无法嵌入；
 - 修改 `player.js` 后记得同步更新 `index.html` 中引用的 `?v=` 缓存版本号。
 
-## 🩺 接口健康探测记录 — 2026-08-28
+## 🩺 接口健康探测记录 — 2026-08-28（二次）
 
-全量实测（HTTP 状态 + 播放器页面特征 + DNS 解析对比）：
+首轮实测所有直连端点服务端均存活，但用户侧（国内）直连第三方解析域名**全部失败**（DNS 污染/封锁），
+唯独走本站反代的接口可用——因此**全部接口改为本站 nginx 中转**（`/jx/<name>/`）：
 
-| 接口 | 端点 | 状态 | 说明 |
+| 接口 | 上游端点 | 状态 | 说明 |
 |---|---|---|---|
-| 虾米 | `jx.xmflv.com/?url=` | ✅ 正常 | 响应完整播放器页 |
-| M1907 | `z1.m1907.top/?jx=` | ✅ 正常 | 官方现行网页端点，iframe 内经其自家中转节点加载；要求调用页为 HTTPS；片名搜索已由官方下线 |
-| 夜幕聚合 | `www.yemu.xyz/?url=` | ✅ 正常 | 聚合页 69KB 完整返回 |
-| 臻享视听 | `aibox.eu.org/?url=` | ⚠️ 改走反代 | 域名属 `.eu.org`，国内 DNS 普遍被劫持，见下节 |
-| 七七云解析 | `jx.77flv.cc/?url=` | ✅ 正常 | 本轮新增，WASM 解码 |
+| 虾米 | `jx.xmflv.com/?url=` | ✅ 反代 | 页面解析逻辑在网易 nosdn CDN，国内可达 |
+| M1907 | `z1.m1907.top/?jx=` | ✅ 入口反代 | 跳转目标为其官方国内中转节点（nnpp:2223），保持客户端直连 |
+| 七七云解析 | `jx.77flv.cc/?url=` | ✅ 反代 | JS/WASM 在神马/字节/同程 CDN，API 为国内裸 IP |
+| 臻享视听 | `aibox.eu.org/?url=` | ✅ 反代 | `.eu.org` 域名国内普遍遭 DNS 劫持 |
+| ik9 云解析 | `yparse.ik9.cc/?url=` | ✅ 反代 | 播放器 JS 在 cdns.nmjsjs.com 国内 CDN |
 
-已淘汰候选（供避坑）：CK解析（域名已售卖停靠）、playerjy（携带可疑广告脚本）、playm3u8 / parwix / jsonplayer / lskyf / 黑米 / 盘古（服务不可达）、艾豆（仅为 77flv 的跳转壳）。
+已淘汰（供避坑）：
+- **夜幕（www.yemu.xyz）** — 经核实是"十八码"CMS 模板技术博客，`?url=` 参数完全无效，**从来不是解析接口**；
+- CK解析（域名售卖停靠）、playerjy（可疑广告脚本）、playm3u8（iframe 无限重定向循环）、parwix / jsonplayer / lskyf / 黑米 / 盘古（服务不可达）、艾豆（仅为 77flv 跳转壳）。
 
 ## 🛡️ DNS 劫持与 Nginx 反代方案（重要）
 
-`.eu.org` 免费二级域名在国内运营商侧被大面积污染，直连 `aibox.eu.org` 的用户可能看到 ISP 广告页。本站的做法：**让浏览器只连自己的域名**，由服务器反代到真实接口，从入口彻底绕开用户侧 DNS 污染：
+国内运营商对第三方解析域名的污染/封锁导致用户浏览器直连全部失败（2026-08-28 实测，
+当时唯一走反代的接口是唯一可用的）。本站的做法：**让浏览器只连自己的域名**，
+由服务器反代到真实接口，从入口彻底绕开用户侧 DNS 污染——现已应用到全部接口。
 
 ```nginx
 # 站点 server 块内、catch-all location 之前（最长前缀优先）
