@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="mdui-theme-auto">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
@@ -7,341 +7,389 @@
   <link rel="icon" href="/favicon.ico" type="image/x-icon" />
   <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
 
+  <!-- MDUI 2（Material Design 3）本地托管，保证国内访问稳定 -->
+  <link rel="stylesheet" href="/assets/vendor/mdui/mdui.css" />
+  <link rel="stylesheet" href="/assets/vendor/mdui/fonts/material-icons.css" />
   <!-- Plyr 样式 -->
   <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+  <script src="/assets/vendor/mdui/mdui.global.js"></script>
+
+  <!-- 主题先行应用，避免暗色模式闪烁 -->
+  <script>
+  (() => {
+    const KEY = 'rcst-theme';
+    const root = document.documentElement;
+    const apply = mode => {
+      root.classList.remove('mdui-theme-light', 'mdui-theme-dark', 'mdui-theme-auto');
+      root.classList.add('mdui-theme-' + mode);
+      root.setAttribute('data-theme', mode === 'light' ? 'light' : 'dark');
+      localStorage.setItem(KEY, mode);
+      const icon = document.querySelector('#theme-toggle mdui-icon');
+      if (icon) icon.name = (mode === 'dark') ? 'light_mode' : 'dark_mode';
+    };
+    apply(localStorage.getItem(KEY) ?? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+    window.__rcstApplyTheme = apply;
+    document.addEventListener('DOMContentLoaded', () => {
+      // DOM 就绪后同步一次图标（head 阶段图标尚未解析）
+      apply(root.classList.contains('mdui-theme-light') ? 'light' : 'dark');
+      const btn = document.getElementById('theme-toggle');
+      if (btn) btn.addEventListener('click', () => {
+        const cur = root.classList.contains('mdui-theme-light') ? 'light' : 'dark';
+        apply(cur === 'dark' ? 'light' : 'dark');
+      });
+    });
+    matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => {
+      if (!localStorage.getItem(KEY)) apply(e.matches ? 'light' : 'dark');
+    });
+  })();
+  </script>
 
   <style>
-    /* ========== 设计变量 ========= */
-    :root{
-      --bg:#0f172a;
-      --card:#0f172a22; /* subtle card */
-      --surface:#1e293b;
-      --accent:#6366f1;
-      --primary-light:#818cf8;
-      --secondary:#10b981;
-      --muted:#94a3b8;
-      --glass:rgba(255,255,255,0.04);
-      --text-main:#f1f5f9;
-      --text-muted:#94a3b8;
-      --error:#f43f5e;
-      --radius:12px;
-      --shadow:0 8px 32px rgba(2,6,23,.45);
-      --max-width:1100px;
-    }
-    [data-theme="light"]{
-      --bg:#f8fafc;
-      --surface:#ffffff;
-      --card:#ffffff;
-      --text-main:#0f172a;
-      --text-muted:#475569;
-      --glass:rgba(0,0,0,0.02);
-      --shadow:0 8px 32px rgba(2,6,23,.08);
-    }
-
-    /* ========== 全局 ========= */
-    *{box-sizing:border-box}
-    html,body{height:100%}
+    /* ===== 基础（沿用 MDUI 设计令牌） ===== */
     body{
       margin:0;
-      font-family:"Segoe UI",Roboto,"PingFang SC","Hiragino Sans GB","Microsoft Yahei",Arial,system-ui;
-      background:linear-gradient(180deg,var(--bg),#061026 140%);
-      color:var(--text-main);
+      background:rgb(var(--mdui-color-background));
+      color:rgb(var(--mdui-color-on-background));
+      font-family:Roboto,system-ui,"PingFang SC","Hiragino Sans GB","Microsoft Yahei",sans-serif;
       -webkit-font-smoothing:antialiased;
-      -moz-osx-font-smoothing:grayscale;
-      min-height:100vh;
-      padding:24px;
-      padding-top:72px; /* 为公告留出空间 */
-      display:flex;
-      align-items:flex-start;
-      justify-content:center;
+    }
+    a{color:rgb(var(--mdui-color-primary))}
+    .page{max-width:1160px;margin:0 auto;padding:16px clamp(12px,4vw,24px) 48px;width:100%}
+
+    /* ===== 顶栏品牌 ===== */
+    .brand-logo{
+      width:40px;height:40px;border-radius:12px;flex:none;margin-right:4px;
+      background:linear-gradient(135deg,#10b981,#6366f1);
+      display:grid;place-items:center;color:#fff;font-weight:800;font-size:13px;
+      box-shadow:var(--mdui-elevation-level1);
+    }
+    .appbar-title{font-weight:600;font-size:16px;line-height:1.25}
+    .appbar-sub{display:block;font-size:12px;font-weight:400;color:rgb(var(--mdui-color-on-surface-variant))}
+    #theme-toggle{--mdui-comp-icon-button-icon-color:rgb(var(--mdui-color-on-surface-variant))}
+
+    /* ===== 公告条（MD3 Banner 风格） ===== */
+    .announcement{
+      display:flex;align-items:center;gap:10px;margin-bottom:16px;
+      padding:10px 12px;border-radius:12px;
+      background:rgb(var(--mdui-color-surface-container-low));
+      border:1px solid rgb(var(--mdui-color-outline-variant));
+    }
+    .announcement .ann-icon{color:rgb(var(--mdui-color-primary));flex:none}
+    .announcement .text{flex:1;font-size:14px;line-height:1.65}
+    .announcement.collapsed{display:none}
+    .ann-toggle{
+      flex:none;appearance:none;border:0;background:transparent;cursor:pointer;
+      width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+      color:rgb(var(--mdui-color-on-surface-variant));
+    }
+    .ann-toggle:hover{background:color-mix(in srgb,rgb(var(--mdui-color-on-surface)) 8%,transparent)}
+    .ann-toggle .material-icons{font-size:20px}
+
+    /* ===== 输入卡片 ===== */
+    .search-card{width:100%;padding:16px;display:flex;flex-direction:column;gap:14px}
+    .search-row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+    .url-field{flex:1;min-width:260px}
+    .parser-field{width:290px;min-width:220px}
+    .play-btn{margin-bottom:8px}
+    .platform-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .platform-row img[slot="icon"]{width:18px;height:18px;border-radius:4px;display:block}
+
+    /* ===== 播放区 ===== */
+    .player-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;margin-top:16px}
+    @media (max-width:960px){.player-grid{grid-template-columns:1fr}}
+
+    .player-area{
+      position:relative;width:100%;aspect-ratio:16/9;min-height:240px;
+      background:#000;border-radius:12px;overflow:hidden;
+      border:1px solid rgb(var(--mdui-color-outline-variant));
+    }
+    .player-area video{width:100%;height:100%;object-fit:contain;display:block;margin:0;padding:0;background:#000}
+    .player-area .plyr{position:absolute;inset:0}
+    .player-area .plyr video,.player-area .plyr .plyr__video-wrapper{width:100%;height:100%}
+    .player-area iframe{position:absolute;inset:0;width:100%;height:100%;border:none;background:#000}
+    /* Plyr 配色跟随 MD3 主色 */
+    .plyr{
+      --plyr-color-main:rgb(var(--mdui-color-primary));
+      --plyr-video-background:transparent;
+      --plyr-badge-background:rgb(var(--mdui-color-surface-variant));
+      --plyr-badge-text-color:rgb(var(--mdui-color-on-surface-variant));
     }
 
-    .wrap{
-      width:min(var(--max-width),98%);
-      background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-      border-radius:14px;
-      padding:18px 18px 22px;
-      box-shadow:var(--shadow);
-      border:1px solid var(--glass);
-      backdrop-filter: blur(6px);
+    .play-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}
+    .mode-switch{
+      display:inline-flex;border:1px solid rgb(var(--mdui-color-outline));
+      border-radius:999px;overflow:hidden;flex:none;
+    }
+    .mode-switch button{
+      appearance:none;border:0;background:transparent;cursor:pointer;
+      font-family:inherit;font-size:13px;font-weight:500;
+      padding:8px 16px;color:rgb(var(--mdui-color-on-surface));
+      display:inline-flex;align-items:center;gap:6px;
+      transition:background .15s,color .15s;
+    }
+    .mode-switch button:hover{background:color-mix(in srgb,rgb(var(--mdui-color-on-surface)) 8%,transparent)}
+    .mode-switch button.active{
+      background:rgb(var(--mdui-color-secondary-container));
+      color:rgb(var(--mdui-color-on-secondary-container));
+    }
+    .mode-switch button.active::before{
+      content:"check";font-family:'Material Icons';font-size:18px;line-height:1;
+    }
+    .meta{font-size:13px;line-height:1.6;color:rgb(var(--mdui-color-on-surface-variant));flex:1;min-width:220px}
+
+    /* ===== 侧栏 ===== */
+    .sidebar{display:flex;flex-direction:column;gap:12px}
+    .side-card{padding:16px;display:flex;flex-direction:column;gap:10px}
+    .card-head{
+      display:flex;align-items:center;gap:8px;
+      font-weight:600;font-size:14px;color:rgb(var(--mdui-color-on-surface));
+    }
+    .card-head .material-icons{font-size:20px}
+    .c-primary{color:rgb(var(--mdui-color-primary))}
+    .c-error{color:rgb(var(--mdui-color-error))}
+    .small{font-size:12.5px;line-height:1.75;color:rgb(var(--mdui-color-on-surface-variant))}
+    .hint{font-size:12px;line-height:1.7;color:rgb(var(--mdui-color-on-surface-variant))}
+
+    .parser-list{display:flex;flex-wrap:wrap;gap:8px}
+    .parser-list button{
+      appearance:none;font-family:inherit;font-size:13px;cursor:pointer;
+      padding:7px 12px;border-radius:8px;
+      border:1px solid rgb(var(--mdui-color-outline-variant));
+      background:transparent;color:rgb(var(--mdui-color-on-surface-variant));
+      transition:background .15s,color .15s,border-color .15s;
+    }
+    .parser-list button:hover{background:color-mix(in srgb,rgb(var(--mdui-color-on-surface)) 8%,transparent)}
+    .parser-list button.selected{
+      background:rgb(var(--mdui-color-secondary-container));
+      color:rgb(var(--mdui-color-on-secondary-container));
+      border-color:transparent;
+    }
+    .parser-list button.selected::before{
+      content:"check";font-family:'Material Icons';font-size:16px;
+      margin-right:6px;vertical-align:-3px;
     }
 
-    .header{display:flex;gap:14px;align-items:center;margin-bottom:14px}
-    .brand{display:flex;gap:12px;align-items:center}
-    .logo{
-      width:52px;height:52px;border-radius:12px;
-      background:linear-gradient(135deg,var(--secondary),var(--accent));
-      display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px;
-      box-shadow:0 8px 28px rgba(99,102,241,.28);
+    /* ===== 页脚 ===== */
+    .hub-link{display:flex;justify-content:center;margin:20px 0 16px}
+    .footer-card{padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:14px}
+    .footer-socials{display:flex;gap:8px}
+    .social-link{
+      width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
+      color:rgb(var(--mdui-color-on-surface-variant));
+      transition:background .15s,color .15s;
+    }
+    .social-link:hover{
+      background:color-mix(in srgb,rgb(var(--mdui-color-on-surface)) 8%,transparent);
+      color:rgb(var(--mdui-color-primary));
+    }
+    .social-link svg{width:22px;height:22px;fill:currentColor}
+    .copyright{font-size:12px;color:rgb(var(--mdui-color-on-surface-variant))}
+
+    /* ===== 公告弹窗（mdui-dialog） ===== */
+    #announcement-modal p{margin:8px 0;font-size:14px;line-height:1.75;color:rgb(var(--mdui-color-on-surface))}
+    #announcement-modal .slogan{
+      color:rgb(var(--mdui-color-error));text-align:center;font-weight:700;
     }
 
-    .brand .title{font-weight:700}
-    .small{font-size:12px;color:var(--text-muted)}
-
-    .controls{margin-left:auto;display:flex;gap:10px;align-items:center}
-
-    /* 输入行 */
-    .input-row{display:flex;gap:8px;width:100%;margin-bottom:14px;flex-wrap:wrap}
-    input[type="text"],select{flex:1;min-width:160px;padding:12px 14px;border-radius:10px;border:1px solid var(--glass);background:rgba(255,255,255,0.02);color:inherit;outline:none}
-    input[type="text"]::placeholder{color:var(--muted)}
-    input[type="text"]:focus,select:focus{box-shadow:0 0 0 4px rgba(99,102,241,.12);border-color:var(--primary-light)}
-
-    button{background:linear-gradient(90deg,var(--accent),var(--secondary));color:#fff;border:0;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:700}
-    button.ghost{background:transparent;color:var(--text-muted);border:1px solid var(--glass)}
-
-    .mode-switch{display:flex;gap:6px;align-items:center;background:var(--glass);padding:6px;border-radius:10px}
-    .mode-switch button{background:transparent;border:0;padding:8px 10px;color:var(--text-muted);border-radius:8px}
-    .mode-switch .active{background:rgba(255,255,255,0.06);color:#fff}
-
-    .player-card{display:grid;grid-template-columns:1fr 320px;gap:14px;padding:12px;border-radius:12px}
-    @media (max-width:900px){.player-card{grid-template-columns:1fr;padding:8px}.header{flex-wrap:wrap}.controls{width:100%}}
-
-    .player-area{background:#000;border-radius:10px;min-height:260px;display:flex;align-items:center;justify-content:center;position:relative;border:1px solid rgba(255,255,255,.06);overflow:hidden}
-    .player-area video,.player-area{width:100%;height:45vh;margin:0;padding:0;background:#000}
-    .player-area iframe{position:absolute;inset:6px;border:none;border-radius:6px}
-
-    .meta{margin-top:8px;color:var(--text-muted);font-size:13px}
-
-    .sidebar{min-height:160px;display:flex;flex-direction:column;gap:10px}
-    .sidebar .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:12px;border-radius:10px;font-size:14px}
-
-    .parser-list{display:flex;gap:8px;flex-wrap:wrap}
-    .parser-list button{background:transparent;color:var(--text-muted);border:1px dashed rgba(255,255,255,.06);padding:8px 10px;border-radius:8px}
-    .parser-list button.selected{border-style:solid;color:#fff;background:rgba(255,255,255,.04)}
-
-    footer{font-size:12px;color:var(--text-muted);border-top:1px solid var(--glass);padding-top:16px;margin-top:20px;text-align:center}
-
-    /* 主题切换按钮 */
-    .theme-btn{width:40px;height:40px;border-radius:50%;border:none;cursor:pointer;background:var(--glass);display:flex;align-items:center;justify-content:center}
-    .theme-btn::before{content:"☀️";font-size:16px}
-    [data-theme="light"] .theme-btn::before{content:"🌙";color:#334155}
-    .theme-btn:active{transform:scale(.96)}
-
-    /* 公告栏 */
-    .announcement{position:fixed;top:0;left:0;width:100%;padding:10px 12px;font-size:15px;font-weight:400;color:#fff;background:linear-gradient(90deg,rgba(99,102,241,0.9),rgba(99,102,241,0.7));backdrop-filter:blur(6px);z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;gap:8px}
-    .announcement .text{max-width:1200px}
-    .announcement::after{content:"";position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);animation:swipe 3s linear infinite}
-    @keyframes swipe{to{left:100%}}
-
-    /* 折叠支持 */
-    .announcement.collapsed{transform:translateY(-120%);transition:transform .36s ease}
-    .announcement-toggle{background:transparent;border:0;color:#fff;font-size:18px;cursor:pointer;border-radius:6px;padding:4px}
-
-    /* 平台胶囊 */
-    .platform-capsule{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:rgba(255,255,255,0.02);border-radius:999px;font-size:13px;color:var(--text-muted);text-decoration:none}
-    .platform-capsule img{filter:drop-shadow(0 1px 2px rgba(0,0,0,.4))}
-    .platform-capsule:hover{background:var(--accent);color:#fff}
-
-    /* footer 白色区域 */
-    .footer-box{background:#fff;color:#333;text-align:center;padding:20px;border-radius:10px;margin-top:18px}
-    .footer-socials{display:flex;justify-content:center;gap:1rem;margin-bottom:12px}
-    .footer-socials a{color:#333;transition:transform .18s}
-    .footer-socials a img{width:26px;height:26px}
-
-    /* 弹窗 */
-    .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.35);backdrop-filter:blur(3px);z-index:10000;opacity:0;pointer-events:none;transition:opacity .28s}
-    .modal.show{opacity:1;pointer-events:auto}
-    .modal-content{background:#fff;color:#1e293b;border-radius:14px;width:min(92%,420px);padding:18px;transform:scale(.96);opacity:0;transition:transform .28s,opacity .28s}
-    .modal.show .modal-content{transform:scale(1);opacity:1}
-    .modal-header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
-    .modal-icon{width:32px;height:32px;border-radius:50%;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
-    .modal-body p{margin:6px 0;font-size:14px}
-    .modal-footer{text-align:right;margin-top:10px}
-    .modal-footer button{background:#3b82f6;color:#fff;border:0;padding:8px 14px;border-radius:8px;cursor:pointer}
-
-    /* 移动端微调 */
+    /* ===== 移动端 ===== */
     @media (max-width:600px){
-      body{padding:16px;padding-top:88px}
-      .wrap{padding:12px}
-      .input-row{flex-direction:column}
-      .input-row input,.input-row select,.input-row button{width:100%}
-      .player-card{grid-template-columns:1fr;padding:8px;gap:10px}
-      .player-area{height:auto}
-      .announcement{padding:8px 12px;font-size:13px}
+      .page{padding:12px 12px 32px}
+      .search-card{padding:12px}
+      .search-row{flex-direction:column;align-items:stretch}
+      .url-field,.parser-field{width:100%;min-width:0}
+      .play-btn{width:100%;margin-bottom:0}
+      .play-bar{flex-direction:column;align-items:stretch}
+      .mode-switch{width:100%}
+      .mode-switch button{flex:1;justify-content:center}
+      .meta{min-width:0}
     }
   </style>
 </head>
 <body>
 
-  <!-- 公告栏（可折叠） -->
-  <div class="announcement" id="announcement" role="status" aria-live="polite">
-    <div class="text">📣 公告：欢迎来到 <strong>The RCST Video Analysis</strong>！当前搜索可能有卡顿，我们会持续优化播放速度。枢纽站：<a href="https://rcst20.dpdns.org" style="color:#bbf7d0;text-decoration:none">点击跳转</a></div>
-    <!-- 折叠按钮：JS 会查找 #announcement-toggle -->
-    <button id="announcement-toggle" class="announcement-toggle" aria-label="折叠公告">−</button>
-  </div>
+<mdui-layout>
+  <!-- ===== 顶部应用栏 ===== -->
+  <mdui-top-app-bar scroll-behavior="elevate">
+    <div class="brand-logo" aria-hidden="true">若臣</div>
+    <mdui-top-app-bar-title>
+      <span class="appbar-title">The RCST Video<span class="appbar-sub">若臣影视VIP解析站 · 免费VIP视频解析播放</span></span>
+    </mdui-top-app-bar-title>
+    <mdui-button-icon id="theme-toggle" aria-label="切换深浅色" title="切换深浅色主题">
+      <mdui-icon name="dark_mode"></mdui-icon>
+    </mdui-button-icon>
+    <mdui-button-icon icon="device_hub" href="https://rcst20.dpdns.org" target="_blank" rel="noopener" aria-label="主站枢纽" title="The RCST 主站（分站总枢纽）"></mdui-button-icon>
+  </mdui-top-app-bar>
 
-  <div class="wrap" role="application">
-    <div class="header">
-      <div class="brand">
-        <div class="logo" aria-hidden="true">若臣</div>
-        <div>
-          <div class="title">The RCST Video • 若臣影视VIP解析站</div>
-          <div class="small">一个免费的VIP视频解析播放网站，输入 m3u8 / 网页 / 片名，系统会自动识别选择解析器或直接播放</div>
-          <div class="small">为爱发电 · 留住精彩 · 分享感动</div>
-        </div>
+  <mdui-layout-main class="page">
+    <!-- ===== 公告条（可折叠） ===== -->
+    <div class="announcement" id="announcement" role="status" aria-live="polite">
+      <mdui-icon name="campaign" class="ann-icon" aria-hidden="true"></mdui-icon>
+      <div class="text">📣 公告：欢迎来到 <strong>The RCST Video Analysis</strong>！当前搜索可能有卡顿，我们会持续优化播放速度。枢纽站：<a href="https://rcst20.dpdns.org" style="text-decoration:none">点击跳转</a></div>
+      <button id="announcement-toggle" class="ann-toggle" aria-label="折叠公告" title="折叠公告">
+        <span class="material-icons" aria-hidden="true">close</span>
+      </button>
+    </div>
+
+    <!-- ===== 输入区 ===== -->
+    <mdui-card variant="filled" class="search-card">
+      <div class="search-row">
+        <mdui-text-field
+          id="input-url"
+          class="url-field"
+          variant="outlined"
+          label="视频链接 / 片名"
+          placeholder="粘贴 m3u8，或输入网页 / 片名（例如：权力的游戏 S01E01）"
+          icon="link"
+          clearable></mdui-text-field>
+        <mdui-select
+          id="parser-select"
+          class="parser-field"
+          variant="outlined"
+          label="解析器"
+          placeholder="选择解析器"></mdui-select>
+        <mdui-button id="play-btn" variant="filled" class="play-btn" aria-label="播放">
+          <span class="material-icons" slot="icon" aria-hidden="true">play_arrow</span>播放
+        </mdui-button>
       </div>
 
-      <button id="theme-toggle" class="theme-btn" aria-label="切换深浅色" title="切换深浅色主题"></button>
-
-      <div class="controls" aria-hidden="false">
-        <div class="mode-switch" role="tablist" aria-label="播放模式">
-          <button id="mode-play" class="active" role="tab" aria-selected="true">智能选择播放模式</button>
-          <button id="mode-iframe" role="tab">VIP解析模式</button>
-        </div>
+      <div class="platform-row">
+        <mdui-chip href="https://m1907.rcst20.dpdns.org/" target="_blank" rel="noopener" variant="filled" elevated>
+          <img slot="icon" src="https://m1907.rcst20.dpdns.org/favicon.ico?v=2" alt="" width="18" height="18">【免费】本站自建影视库
+        </mdui-chip>
+        <mdui-chip href="https://www.iqiyi.com/" target="_blank" rel="noopener" elevated>
+          <img slot="icon" src="https://static.iqiyi.com/favicon.ico" alt="" width="18" height="18">爱奇艺
+        </mdui-chip>
+        <mdui-chip href="https://v.qq.com/" target="_blank" rel="noopener" elevated>
+          <img slot="icon" src="https://v.qq.com/favicon.ico" alt="" width="18" height="18">腾讯视频
+        </mdui-chip>
+        <mdui-chip href="https://www.bilibili.com/" target="_blank" rel="noopener" elevated>
+          <img slot="icon" src="https://www.bilibili.com/favicon.ico" alt="" width="18" height="18">哔哩哔哩
+        </mdui-chip>
+        <mdui-chip href="https://www.youku.com/" target="_blank" rel="noopener" elevated>
+          <img slot="icon" src="https://www.youku.com/favicon.ico" alt="" width="18" height="18">优酷
+        </mdui-chip>
       </div>
-    </div>
+    </mdui-card>
 
-    <div class="input-row">
-      <input id="input-url" type="text" placeholder="粘贴 m3u8，或输入网页 / 片名（例如：权力的游戏 S01E01）" aria-label="输入链接或片名" />
-      <select id="parser-select" aria-label="选择解析器"></select>
-      <button id="play-btn" aria-label="播放">▶ 播放</button>
-    </div>
-
-    <div style="margin:10px 0; display:flex; gap:12px; justify-content:flex-end; align-items:center; flex-wrap:wrap;">
-      <a class="platform-capsule" href="https://m1907.rcst20.dpdns.org/" target="_blank" rel="noopener">
-        <img src="https://m1907.rcst20.dpdns.org/favicon.ico?v=2" alt="本站自建影视库" width="18" height="18">
-        【免费】本站自建影视库
-      </a>
-      <a class="platform-capsule" href="https://www.iqiyi.com/" target="_blank" rel="noopener">
-        <img src="https://static.iqiyi.com/favicon.ico" alt="爱奇艺" width="18" height="18">爱奇艺
-      </a>
-      <a class="platform-capsule" href="https://v.qq.com/" target="_blank" rel="noopener">
-        <img src="https://v.qq.com/favicon.ico" alt="腾讯视频" width="18" height="18">腾讯视频
-      </a>
-      <a class="platform-capsule" href="https://www.bilibili.com/" target="_blank" rel="noopener">
-        <img src="https://www.bilibili.com/favicon.ico" alt="哔哩哔哩" width="18" height="18">哔哩哔哩
-      </a>
-      <a class="platform-capsule" href="https://www.youku.com/" target="_blank" rel="noopener">
-        <img src="https://www.youku.com/favicon.ico" alt="优酷" width="18" height="18">优酷
-      </a>
-    </div>
-
-    <div class="player-card" role="region" aria-label="播放器区域">
-      <div>
-        <div class="player-area" id="player-area">
-          <video id="html5-video" playsinline controls crossorigin></video>
+    <!-- ===== 播放器 + 侧栏 ===== -->
+    <div class="player-grid">
+      <section>
+        <div class="player-area" id="player-area" role="region" aria-label="播放器区域">
+          <video id="html5-video" playsinline controls></video>
           <iframe id="parser-iframe" style="display:none;"
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-presentation"
             allowfullscreen
             webkitallowfullscreen
             mozallowfullscreen></iframe>
         </div>
-        <div class="meta" id="meta">状态指示：准备就绪 · 试试粘贴一个 .m3u8 链接，或输入片名并选择解析器。</div>
-      </div>
 
-      <aside class="sidebar" aria-hidden="false">
-        <div class="card">
-          <div style="font-weight:700">📡解析器（⚡️快速选择切换⚡️）</div>
-          <div class="parser-list" id="quick-parsers" aria-hidden="false"></div>
-          <div class="hint">若 iframe 被目标站点拒绝（X-Frame-Options），请切换到 <strong>VIP解析模式</strong> 或使用后端代理转发。</div>
+        <div class="play-bar">
+          <div class="mode-switch" role="tablist" aria-label="播放模式">
+            <button id="mode-play" class="active" role="tab" aria-selected="true">智能选择播放模式</button>
+            <button id="mode-iframe" role="tab" aria-selected="false">VIP解析模式</button>
+          </div>
+          <div class="meta" id="meta">状态指示：准备就绪 · 试试粘贴一个 .m3u8 链接，或输入片名并选择解析器。</div>
         </div>
+      </section>
 
-        <div class="card">
-          <div style="font-weight:700">⚠️警告</div>
+      <aside class="sidebar">
+        <mdui-card variant="filled" class="side-card">
+          <div class="card-head"><span class="material-icons c-primary" aria-hidden="true">settings_input_antenna</span>解析器（⚡️快速选择切换⚡️）</div>
+          <div class="parser-list" id="quick-parsers"></div>
+          <div class="hint">若 iframe 被目标站点拒绝（X-Frame-Options），请切换到 <strong>VIP解析模式</strong> 或使用后端代理转发。</div>
+        </mdui-card>
+
+        <mdui-card variant="outlined" class="side-card">
+          <div class="card-head"><span class="material-icons c-error" aria-hidden="true">warning</span>警告</div>
           <div class="small">• 接口及片源均由外部服务提供，本站仅提供聚合解析服务，片中一切广告均与本站无关，切勿轻信！</div>
           <div class="small">• 本站使用m3u8流媒体服务进行播放，此过程会消耗流量，请合理控制观看时长。</div>
-        </div>
+        </mdui-card>
 
-        <div class="card">
-          <div style="font-weight:700">❕说明</div>
+        <mdui-card variant="outlined" class="side-card">
+          <div class="card-head"><span class="material-icons c-primary" aria-hidden="true">info</span>说明</div>
           <div class="small">• 直接播放需要目标是 m3u8（或 HLS 支持）。若浏览器不原生支持，会使用 hls.js 来播放。</div>
           <div class="small">• 解析器会在 iframe 中打开解析页面，该页面通常包含内嵌播放或转码。</div>
-        </div>
+        </mdui-card>
 
-        <div class="card">
-          <div style="font-weight:700">🛠️调试 / 提示</div>
+        <mdui-card variant="outlined" class="side-card">
+          <div class="card-head"><span class="material-icons c-primary" aria-hidden="true">build</span>调试 / 提示</div>
           <div class="small">• 若播放失败，请先查看浏览器开发者控制台（网络 / CORS / X-Frame）。</div>
           <div class="small">• 需要后端处理时（避免 CORS 或封禁），建议在服务器上做代理或调用解析接口返回真实 m3u8。</div>
           <div class="small">• 如仍无法播放，请联系管理员：ruochenyang161@gmail.com</div>
-        </div>
+        </mdui-card>
       </aside>
     </div>
 
-    <!-- ===== 纯白背景页脚 开始 ===== -->
-    <div style="text-align:center;margin-top:14px">
-      <a href="https://rcst20.dpdns.org" style="font-weight:bold;color:green;text-decoration:none">点击跳转到The RCST 主站（分站总枢纽）</a>
+    <!-- ===== 主站跳转 ===== -->
+    <div class="hub-link">
+      <mdui-button variant="tonal" href="https://rcst20.dpdns.org" target="_blank" rel="noopener">
+        <span class="material-icons" slot="icon" aria-hidden="true">open_in_new</span>点击跳转到 The RCST 主站（分站总枢纽）
+      </mdui-button>
     </div>
 
-    <div class="footer-box">
+    <!-- ===== 页脚 ===== -->
+    <mdui-card variant="filled" class="footer-card">
       <div class="footer-socials">
-        <a href="https://github.com/backrooms-yrc" target="_blank" rel="noopener" title="GitHub"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23333' d='M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z'/%3E%3C/svg%3E" alt="GitHub"></a>
-        <a href="https://x.com/yrc2025" target="_blank" rel="noopener" title="Twitter"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23333' d='M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z'/%3E%3C/svg%3E" alt="Twitter"></a>
-        <a href="mailto:ruochenyang161@gmail.com" title="邮箱"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23333' d='M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z'/%3E%3C/svg%3E" alt="邮箱"></a>
-        <a href="https://t.me/rcst20" target="_blank" rel="noopener" title="Telegram"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23333' d='M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z'/%3E%3C/svg%3E" alt="Telegram"></a>
+        <a class="social-link" href="https://github.com/backrooms-yrc" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        </a>
+        <a class="social-link" href="https://x.com/yrc2025" target="_blank" rel="noopener" title="Twitter" aria-label="Twitter">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
+        </a>
+        <a class="social-link" href="mailto:ruochenyang161@gmail.com" title="邮箱" aria-label="邮箱">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+        </a>
+        <a class="social-link" href="https://t.me/rcst20" target="_blank" rel="noopener" title="Telegram" aria-label="Telegram">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+        </a>
       </div>
 
-      <div title="MySSL 安全签章" id="myssl_seal" style="text-align:center;margin-top:6px">
+      <div title="MySSL 安全签章" id="myssl_seal" style="text-align:center">
         <img src="https://sealres.myssl.com/seal/img/2x/seal.svg?domain=vipvideo.rcst20.dpdns.org" alt="MySSL 安全签章" style="width:130px;height:auto;cursor:pointer" onclick="window.open('https://myssl.com/seal/detail?domain=vipvideo.rcst20.dpdns.org','MySSL安全签章','height=800,width=470')">
       </div>
 
-      <footer>（c）2025 The RCST Video Analysis 版权所有，侵权必究！</footer>
-    </div>
-    <!-- ===== 纯白背景页脚 结束 ===== -->
+      <footer class="copyright">© 2025 The RCST Video Analysis 版权所有，侵权必究！</footer>
+    </mdui-card>
+  </mdui-layout-main>
+</mdui-layout>
 
+<!-- ===== 弹窗公告（mdui-dialog，JS 控制打开） ===== -->
+<mdui-dialog id="announcement-modal" headline="网站公告" icon="campaign" close-on-esc role="dialog" aria-modal="true" aria-labelledby="announcement-title">
+  <div class="modal-body">
+    <p><strong>公告标题：</strong>欢迎来到 The RCST Video 🎬</p>
+    <p><strong>公告内容：</strong>本站支持 VIP 视频解析播放，推荐使用 m3u8 链接体验最佳效果。</p>
+    <p><strong>警    告：</strong>网站的接口写在js里面，别总是想着盗用！</p>
+    <p><strong>使用教程：</strong></p>
+    <p>1.使用接口一：去各大影视网站（如：爱奇艺 等）找到您想要观看的内容，复制链接并粘贴到本站；</p>
+    <p>2.使用接口二：直接输入影片名称，但是有可能会查不到，如果查不到就换接口一。</p>
+    <p><strong>发布者：</strong>官方</p>
+    <p><strong>发布时间：</strong>2025-09-15</p>
+    <p class="slogan">我们的目标是做最美观、好用的VIP影视解析站！让天下资源为人民服务！</p>
   </div>
+  <mdui-button slot="action" id="modal-ok" variant="filled">确定</mdui-button>
+</mdui-dialog>
 
+<!-- Plyr JS -->
+<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+<!-- hls.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.11/dist/hls.min.js"></script>
 
-  <!-- 弹窗公告（保留，JS 控制 show 类） -->
-  <div id="announcement-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="announcement-title">
-    <div class="modal-content">
-      <div class="modal-header">
-        <div class="modal-icon">i</div>
-        <h2 id="announcement-title">网站公告</h2>
-      </div>
-      <div class="modal-body">
-        <p><strong>公告标题：</strong>欢迎来到 The RCST Video 🎬</p>
-        <p><strong>公告内容：</strong>本站支持 VIP 视频解析播放，推荐使用 m3u8 链接体验最佳效果。</p>
-        <p><strong>警    告：</strong>网站的接口写在js里面，别总是想着盗用！</p>
-        <p><strong>使用教程：</strong></p>
-        <p>1.使用接口一：去各大影视网站（如：爱奇艺 等）找到您想要观看的内容，复制链接并粘贴到本站；</p>
-        <p>2.使用接口二：直接输入影片名称，但是有可能会查不到，如果查不到就换接口一。</p>
-        <p><strong>发布者：</strong>官方</p>
-        <p><strong>发布时间：</strong>2025-09-15</p>
-        <p style="color: red; text-align: center; font-weight: bold;">我们的目标是做最美观、好用的VIP影视解析站！让天下资源为人民服务！</p>
-      </div>
-      <div class="modal-footer">
-        <button id="modal-ok">确定</button>
-      </div>
-    </div>
-  </div>
+<!-- ===== 业务逻辑 ===== -->
+<script src="/assets/js/player.js?v=2026082802"></script>
 
-  <!-- Plyr JS -->
-  <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
-  <!-- hls.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.11/dist/hls.min.js"></script>
-
-  <!-- ===== 1. 你原来的业务逻辑（未改动） ===== -->
-  <script src="/assets/js/player.js?v=2025091707"></script>
-
-  <!-- ===== 2. 主题切换补丁（未改动逻辑） ===== -->
-  <script>
-  (() => {
-    const STORAGE_KEY = 'rcst-theme';
-    const ATTR = 'data-theme';
-    const btn = document.getElementById('theme-toggle');
-    const getPreferred = () => localStorage.getItem(STORAGE_KEY) ?? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-    const apply = mode => { document.documentElement.setAttribute(ATTR, mode); localStorage.setItem(STORAGE_KEY, mode); };
-    apply(getPreferred());
-    btn.addEventListener('click', () => { const current = document.documentElement.getAttribute(ATTR); apply(current === 'dark' ? 'light' : 'dark'); });
-    matchMedia('(prefers-color-scheme: light)').addEventListener('change', e => { if (!localStorage.getItem(STORAGE_KEY)) apply(e.matches ? 'light' : 'dark'); });
-  })();
-  </script>
-
-  <!-- ===== 3. 公告栏折叠（未改动逻辑，但有折叠按钮） ===== -->
-  <script>
-  (() => {
-    const ann = document.getElementById('announcement');
-    const toggle = document.getElementById('announcement-toggle');
-    if (!ann || !toggle) return;
-    const collapsed = localStorage.getItem('ann-collapsed') === '1';
-    if (collapsed) ann.classList.add('collapsed');
-    toggle.addEventListener('click', () => {
-      const now = ann.classList.toggle('collapsed');
-      localStorage.setItem('ann-collapsed', now ? '1' : '');
-      toggle.textContent = now ? '+' : '−';
-    });
-  })();
-  </script>
+<!-- ===== 公告栏折叠 ===== -->
+<script>
+(() => {
+  const ann = document.getElementById('announcement');
+  const toggle = document.getElementById('announcement-toggle');
+  if (!ann || !toggle) return;
+  if (localStorage.getItem('ann-collapsed') === '1') ann.classList.add('collapsed');
+  toggle.addEventListener('click', () => {
+    const now = ann.classList.toggle('collapsed');
+    localStorage.setItem('ann-collapsed', now ? '1' : '');
+  });
+})();
+</script>
 
 </body>
 </html>

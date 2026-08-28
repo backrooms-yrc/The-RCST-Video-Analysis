@@ -8,17 +8,20 @@
   const quickParsers = document.getElementById('quick-parsers');
 
   // 🔗 解析接口（只要在这里加就会自动出现在前端）
+  // 2026-08-28 全量探测：虾米/夜幕/m1907 官方链路均存活；aibox 原域名 aibox.eu.org 属 .eu.org，
+  // 国内 DNS 普遍被劫持，已改走本站反代 /jx/aibox/（nginx 中转，浏览器只连本站域名）。
   const parsers = [
-    { name: "接口1（高清稳定，首选）", url: "https://jx.xmflv.com/?url=%s" },
-    { name: "【可直接搜索片名】接口2（本站自建，有点卡）", url: "https://z1.m1907.top/?jx=%s" },
-    { name: "聚合解析3（自动选择最优线路）", url: "https://www.yemu.xyz/?url=%s" },
-    { name: "臻享视听4（免费1080P，付费4K HDR/臻享视听）", url: "https://aibox.eu.org/?url=%s" },
+    { name: "接口1·虾米（高清稳定，首选）", url: "https://jx.xmflv.com/?url=%s" },
+    { name: "接口2·M1907（支持 m3u8/mp4 直链）", url: "https://z1.m1907.top/?jx=%s" },
+    { name: "接口3·夜幕聚合（自动选择最优线路）", url: "https://www.yemu.xyz/?url=%s" },
+    { name: "接口4·臻享视听（已修复DNS劫持，本站中转）", url: "/jx/aibox/?url=%s" },
+    { name: "接口5·七七云解析（WASM解码）", url: "https://jx.77flv.cc/?url=%s" },
     // { name: "接口名称", url: "https://xxx.com/?url=%s" }
   ];
 
-  // 填充 select 和快速选择
+  // 填充 select 和快速选择（mdui-select 使用 mdui-menu-item 子项）
   parsers.forEach(p => {
-    const opt = document.createElement("option");
+    const opt = document.createElement("mdui-menu-item");
     opt.value = p.url; opt.textContent = "解析器：" + p.name;
     parserSelect.appendChild(opt);
 
@@ -26,6 +29,8 @@
     btn.textContent = p.name; btn.dataset.url = p.url;
     quickParsers.appendChild(btn);
   });
+  parserSelect.value = parsers[0].url;
+  if (quickParsers.firstElementChild) quickParsers.firstElementChild.classList.add('selected');
 
   // 初始化 Plyr
   try { new Plyr(video); } catch(e){}
@@ -49,6 +54,7 @@
     const btn = e.target.closest('button[data-url]');
     if(!btn) return;
     parserSelect.value = btn.dataset.url;
+    [...quickParsers.querySelectorAll('button')].forEach(b => b.classList.toggle('selected', b === btn));
   });
 
   // 判断是否 m3u8
@@ -86,18 +92,18 @@
   iframe.addEventListener('load', ()=> meta.textContent='状态指示：iframe解析器播放窗口 已加载完成！');
 })();
 
-  // 自动弹窗公告
+  // 自动弹窗公告（mdui-dialog 通过 open 属性控制）
 window.addEventListener("load", () => {
   const modal = document.getElementById("announcement-modal");
   const okBtn = document.getElementById("modal-ok");
 
   if (modal && okBtn) {
     // 打开
-    modal.classList.add("show");
+    modal.open = true;
 
     // 关闭
     okBtn.addEventListener("click", () => {
-      modal.classList.remove("show");
+      modal.open = false;
     });
   }
 });
