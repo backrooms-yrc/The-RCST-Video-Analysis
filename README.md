@@ -1,157 +1,181 @@
-本教程已由GPT5二次润色，版本ver2。
-aaa
-# The-RCST-Video-Analysis
-一个开箱即用的 VIP 影视解析网站模版，功能强大、UI 精美、持续更新。（UI 界面由 GPT-5 深度美化）
+<div align="center">
 
-# 配置教程
+# The RCST Video Analysis
 
+**若臣影视 · VIP 视频聚合解析播放站**
 
-## 首次使用
+一个开箱即用的纯静态 VIP 视频解析前端：粘贴 m3u8 / 视频页链接 / 片名，
+自动选择直连播放（hls.js）或解析器 iframe 播放。
 
-**1. 环境准备**  
-需要 Nginx 环境，推荐版本为 **1.18**
+MDUI 2 · Material Design 3 | Plyr | hls.js | 零后端依赖
 
-**2. 拉取仓库**  
-将仓库拉取到您的服务器建站目录下，解压缩
-
-# The-RCST-Video-Analysis
-
-一个开箱即用的 VIP 影视解析站模板，包含简洁的前端播放器界面（Plyr + hls.js），以及 iframe 解析器切换机制。界面已做视觉优化（保留所有业务逻辑），适合快速部署和二次开发。
-
-本文档旨在说明如何快速部署、配置解析器、排查常见问题与安全注意事项。
-
-## 目录
-- 项目概览
-- 快速启动（本地预览）
-- 部署到 Nginx（生产环境）
-- 添加 / 管理解析接口（`assets/js/player.js`）
-- 常见问题与调试
-- 安全及合规提醒
-- 联系方式
+</div>
 
 ---
 
-## 项目概览
+## ✨ 特性
 
-- 主要页面：`index.html`（我已提供一个美化后的副本 `index_beta.html`，供你对比）
-- 业务逻辑：`assets/js/player.js`（解析器列表、播放逻辑、模式切换、公告弹窗）
-- 第三方库：Plyr（播放器 UI）、hls.js（HLS 支持）
+- **MD3 设计体系** — 基于 [MDUI 2](https://www.mdui.org/) 重构：顶栏、通告条、输入卡片、纸片（Chip）、对话框全部遵循 Material Design 3 规范，**本地托管**样式与字体，不依赖海外 CDN
+- **深浅色主题** — 跟随系统 + 手动切换，`localStorage` 记忆偏好，首屏防闪烁预加载
+- **智能播放** — 输入 m3u8 直连播放（原生 HLS / hls.js 自动降级）；其余输入走所选解析器
+- **多解析器热切换** — 下拉选择 + 侧栏快速切换纸片，选中态实时同步
+- **稳定的播放器窗口** — 16:9 响应式容器（`aspect-ratio`），任意屏幕尺寸不变形、不溢出
+- **DNS 劫持对策** — 对易被污染的接口域名提供 Nginx 反代中转方案（见下文）
 
-前端会根据输入内容自动判断：
-- 如果是 m3u8（HLS），尝试直接用浏览器播放或通过 hls.js 播放；
-- 否则使用所选解析器（在 iframe 中打开解析页面）。
+## 🧰 技术栈
 
-页面保留了主题切换、公告弹窗与公告折叠等 UX 功能，且我在美化时没有改动业务逻辑代码文件（仅样式与结构优化）。
+| 依赖 | 版本 | 加载方式 |
+|---|---|---|
+| MDUI | 2.1.5 | 本地 `assets/vendor/mdui/` |
+| Material Icons（连字字体） | v145 | 本地 `assets/vendor/mdui/fonts/` |
+| Plyr | 3.7.8 | CDN |
+| hls.js | 1.6.11 | CDN |
 
----
+> Plyr 与 hls.js 仍走公共 CDN，如需完全离线可自行下载替换 `<script>` / `<link>` 引用。
 
-## 快速启动（本地预览）
+## 📦 目录结构
 
-在开发或测试时，你可以在本地通过简单的静态服务器预览页面（推荐用于避免 file:// 下的 iframe/CORS 问题）。在项目根目录运行：
-
-PowerShell 示例：
-```powershell
-python -m http.server 8000
-# 然后在浏览器打开: http://localhost:8000/index.html
+```
+The-RCST-Video-Analysis/
+├── index.html                # 主页面（MDUI 版）
+├── index_beta.html           # 与 index.html 保持同步的副本
+├── favicon.ico
+├── assets/
+│   ├── js/
+│   │   └── player.js         # 核心业务逻辑：接口列表 / 播放 / 模式切换 / 弹窗
+│   └── vendor/
+│       └── mdui/             # 本地托管的 MDUI 2.1.5（CSS + JS + 图标字体）
+└── README.md
 ```
 
-如果你使用 Node.js，也可以使用 `npx http-server`：
-```powershell
+## 🚀 快速开始（本地预览）
+
+在项目根目录任选一种方式起静态服务（避免 `file://` 协议下的 iframe / CORS 问题）：
+
+```bash
+python3 -m http.server 8000
+# 或
 npx http-server -p 8000
-# http://localhost:8000
 ```
 
----
+浏览器打开 `http://localhost:8000` 即可。
 
-## 部署到 Nginx（生产环境）
+## 🔌 解析接口管理
 
-建议在生产环境中使用 Nginx 做静态托管，并对敏感文件夹做一些防护（例如限制对 `assets/js` 中业务脚本的直接外部调用，以降低接口滥用风险）。下面给出一个示例 `nginx` 配置片段：
-
-```nginx
-location / {
-        root /var/www/your-site;            # 指向项目的根目录
-        index index.html index_beta.html;
-}
-
-# 可选：限制 referer，避免别人直接抓取 /assets/js/player.js
-location = /assets/js/player.js {
-        valid_referers none blocked yourdomain.com www.yourdomain.com;
-        if ($invalid_referer) {
-                return 403; # 或 404，根据策略选择
-        }
-        root /var/www/your-site;
-}
-```
-
-注意：
-- 请将 `yourdomain.com` 与 `root` 路径替换为你的实际域名与部署目录；
-- Referer 限制可以减少随意抓取，但不能作为强安全边界（Referer 可伪造）。
-
----
-
-## 添加 / 管理解析接口（修改 `assets/js/player.js`）
-
-解析器列表保存在 `assets/js/player.js` 的 `parsers` 数组中。你可以在该文件里直接添加、删除或调整顺序；前端会在加载时自动填充下拉与快速选择按钮。
-
-示例（摘自 `assets/js/player.js`）：
+接口列表定义在 `assets/js/player.js` 顶部的 `parsers` 数组，增删改后前端自动渲染下拉与快速切换纸片：
 
 ```js
 const parsers = [
-    { name: "接口1（高清稳定，首选）", url: "https://jx.xmflv.com/?url=%s" },
-    { name: "接口2（本站自建）", url: "https://z1.m1907.top/?jx=%s" },
-    // { name: "示例接口", url: "https://example.com/?url=%s" }
+  { name: "接口1·虾米（高清稳定，首选）",     url: "https://jx.xmflv.com/?url=%s" },
+  { name: "接口2·M1907（支持 m3u8/mp4 直链）", url: "https://z1.m1907.top/?jx=%s" },
+  { name: "接口3·夜幕聚合（自动选择最优线路）", url: "https://www.yemu.xyz/?url=%s" },
+  { name: "接口4·臻享视听（已修复DNS劫持，本站中转）", url: "/jx/aibox/?url=%s" },
+  { name: "接口5·七七云解析（WASM解码）",     url: "https://jx.77flv.cc/?url=%s" },
+  // { name: "新接口", url: "https://example.com/?url=%s" }
 ];
-
-// 前端会把每个 parser 生成 <option> 与快速按钮
 ```
 
 要点：
-- URL 模板中请保留 `%s`，前端会把用户输入（链接或片名）替换并编码为 `encodeURIComponent`；
-- 建议测试每个接口是否支持在 iframe 中加载（某些站点会使用 `X-Frame-Options: DENY` 或 CSP 限制，这会导致 iframe 被拒绝）；
-- 如果接口需要额外参数（cookie/token），请在服务端进行代理处理并慎重保管密钥。
+
+- URL 模板保留 `%s`，用户输入会经 `encodeURIComponent` 替换后载入 iframe；
+- 接入前请确认目标站无 `X-Frame-Options: DENY` / CSP `frame-ancestors` 限制，否则 iframe 无法嵌入；
+- 修改 `player.js` 后记得同步更新 `index.html` 中引用的 `?v=` 缓存版本号。
+
+## 🩺 接口健康探测记录 — 2026-08-28
+
+全量实测（HTTP 状态 + 播放器页面特征 + DNS 解析对比）：
+
+| 接口 | 端点 | 状态 | 说明 |
+|---|---|---|---|
+| 虾米 | `jx.xmflv.com/?url=` | ✅ 正常 | 响应完整播放器页 |
+| M1907 | `z1.m1907.top/?jx=` | ✅ 正常 | 官方现行网页端点，iframe 内经其自家中转节点加载；要求调用页为 HTTPS；片名搜索已由官方下线 |
+| 夜幕聚合 | `www.yemu.xyz/?url=` | ✅ 正常 | 聚合页 69KB 完整返回 |
+| 臻享视听 | `aibox.eu.org/?url=` | ⚠️ 改走反代 | 域名属 `.eu.org`，国内 DNS 普遍被劫持，见下节 |
+| 七七云解析 | `jx.77flv.cc/?url=` | ✅ 正常 | 本轮新增，WASM 解码 |
+
+已淘汰候选（供避坑）：CK解析（域名已售卖停靠）、playerjy（携带可疑广告脚本）、playm3u8 / parwix / jsonplayer / lskyf / 黑米 / 盘古（服务不可达）、艾豆（仅为 77flv 的跳转壳）。
+
+## 🛡️ DNS 劫持与 Nginx 反代方案（重要）
+
+`.eu.org` 免费二级域名在国内运营商侧被大面积污染，直连 `aibox.eu.org` 的用户可能看到 ISP 广告页。本站的做法：**让浏览器只连自己的域名**，由服务器反代到真实接口，从入口彻底绕开用户侧 DNS 污染：
+
+```nginx
+# 站点 server 块内、catch-all location 之前（最长前缀优先）
+location ^~ /jx/aibox/ {
+    proxy_pass https://aibox.eu.org/;
+    proxy_set_header Host aibox.eu.org;
+    proxy_ssl_server_name on;
+    proxy_ssl_name aibox.eu.org;
+    proxy_ssl_protocols TLSv1.2 TLSv1.3;
+    proxy_set_header User-Agent $http_user_agent;
+    proxy_set_header Accept-Encoding "";
+    proxy_connect_timeout 10s;
+    proxy_send_timeout 120s;
+    proxy_read_timeout 120s;
+}
+```
+
+前端对应把该接口的 URL 写成相对路径 `/jx/aibox/?url=%s` 即可。该方案可复制到其他被劫持的接口。
+
+> 局限：反代只覆盖入口 HTML 与相对路径资源；若解析器内部 JS 硬编码直连其他被污染域名，则无法覆盖（M1907 即属此类，其官方入口链路目前完好，故保持直连）。
+
+## 🖥️ 生产部署（Nginx）
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name your.domain.com;
+    root /path/to/The-RCST-Video-Analysis;
+    index index.html index_beta.html;
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location ~ /\. { deny all; }
+
+    # 如需反代被劫持接口，将上一节的 /jx/aibox/ 块加在此处
+}
+```
+
+可选加固（防止脚本被外站直链滥用，非安全边界）：
+
+```nginx
+location = /assets/js/player.js {
+    valid_referers none blocked your.domain.com www.your.domain.com;
+    if ($invalid_referer) { return 404; }
+}
+```
+
+## ❓ 常见问题
+
+**播放器窗口大小异常？**
+页面容器为 16:9 响应式（`.player-area { aspect-ratio: 16/9 }`），请勿再对 `.player-area` 或其内部 `video` 强制指定 `height`，否则会与 Plyr 生成的包装容器冲突导致窗口错乱（旧版 `height:45vh` 的教训）。
+
+**iframe 白屏 / 拒绝加载？**
+目标站设置了 `X-Frame-Options` 或 CSP。换一个解析器，或参照上文用服务端反代。
+
+**m3u8 无法播放？**
+Safari 原生支持；其余浏览器由 hls.js 接管。仍失败时查看控制台的网络 / CORS 报错；部分源站不带 CORS 头，此前版本 `video` 标签上的 `crossorigin` 属性已因此移除，请勿加回。
+
+**接口突然全挂了？**
+免费解析接口生命周期短，属正常现象。按上文方法替换 `parsers` 数组中的失效项即可，新接口先实测再上线。
+
+## 🔒 安全与合规
+
+- 本项目仅为聚合解析前端模板，接口与片源均来自第三方公共服务，请勿用于未经授权的分发或商业用途；
+- 不要在前端硬编码任何密钥 / 凭证；
+- Referer 限制只能降低滥用，不是安全边界；
+- 使用各解析接口时请遵守目标服务条款。
+
+## 📮 联系方式
+
+- 邮箱：ruochenyang161@gmail.com
+- GitHub：[backrooms-yrc](https://github.com/backrooms-yrc)
+- Telegram：[@rcst20](https://t.me/rcst20)
+
+欢迎以 issue / PR 形式反馈接口失效或改进建议。
 
 ---
 
-## 常见问题与调试建议
-
-- 播放黑屏或无声：打开浏览器开发者工具，查看控制台与网络请求（CORS / 404 / 500）。
-- iframe 内容空白或被拒绝：通常是目标站点设置了 `X-Frame-Options` 或 CSP，解决方式：
-    - 使用不同解析器（有的解析器会将视频流替换为可嵌入的播放器）；
-    - 在服务端代理解析并把最终 m3u8 返回到你自己的页面；
-- m3u8 无法播放：
-    - 如果浏览器原生支持 HLS（Safari），直接设置 `video.src` 即可；
-    - 否则会使用 `hls.js`（已引入）加载流；若 `Hls.isSupported()` 返回 false，请检查浏览器兼容性；
-- 选择解析器后 iframe 未更新：请确认 `player.js` 中 `parserSelect.value` 和 `iframe.src` 操作正常（该文件为业务逻辑核心，慎重修改）。
-
-日志提示（`assets/js/player.js` 中）：
-- 页面会在 `#meta` 元素上显示状态变化（传递给用户的简要提示）。
-
----
-
-## 安全 & 合规提醒
-
-- 本项目仅为技术模板，解析接口与片源通常为第三方服务或公共聚合站点，可能包含版权内容。请勿用于未经授权的分发或商业用途。 
-- 尽量不要把敏感凭证硬编码到前端（`assets/js`），若必要应放在后端并通过安全的授权机制调用。
-- Referer 限制与简单 Nginx 规则只能降低滥用风险，不能替代完善的权限与配额控制。
-
----
-
-## 开发与二次改造建议
-
-- 将大量样式提取到单独的 CSS 文件，便于维护（我已把样式内联到 `index_beta.html` 中用于快速预览）。
-- 如果需要服务端代理解析（推荐用于稳定性与规避 CORS），可以在后端实现一个简单的 m3u8 转发接口，并在 `player.js` 中优先调用后端接口。
-- 添加单元测试或集成测试以自动化检测解析器可用性（可定期 ping 接口并报警）。
-
----
-
-## 联系方式
-
-如需进一步支持或有反馈，请发邮件到：
-
-`ruochenyang161@gmail.com`
-
-欢迎以 issue 或 PR 的形式提交改进建议。
-
----
-
-版权所有 © 2025 The RCST Video Analysis
+版权所有 © 2025 The RCST Video Analysis · [The RCST 主站枢纽](https://rcst20.dpdns.org)
