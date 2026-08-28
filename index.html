@@ -190,6 +190,9 @@
       color:rgb(var(--mdui-color-error));text-align:center;font-weight:700;
     }
 
+    /* ===== 搜索结果卡片 ===== */
+    #search-card{margin-top:12px}
+
     /* ===== 移动端 ===== */
     @media (max-width:600px){
       .page{padding:12px 12px 32px}
@@ -222,7 +225,7 @@
     <!-- ===== 公告条（可折叠） ===== -->
     <div class="announcement" id="announcement" role="status" aria-live="polite">
       <mdui-icon name="campaign" class="ann-icon" aria-hidden="true"></mdui-icon>
-      <div class="text">📣 公告：欢迎来到 <strong>Current Video Analysis</strong>！当前搜索可能有卡顿，我们会持续优化播放速度。</div>
+      <div class="text">📣 公告：本站上线<strong>自建片源搜索</strong>——输入片名即可选集直接播放，无需第三方解析器！VIP 链接解析仍可用。</div>
       <button id="announcement-toggle" class="ann-toggle" aria-label="折叠公告" title="折叠公告">
         <span class="material-icons" aria-hidden="true">close</span>
       </button>
@@ -286,8 +289,18 @@
             <button id="mode-play" class="active" role="tab" aria-selected="true">智能选择播放模式</button>
             <button id="mode-iframe" role="tab" aria-selected="false">VIP解析模式</button>
           </div>
-          <div class="meta" id="meta">状态指示：准备就绪 · 试试粘贴一个 .m3u8 链接，或输入片名并选择解析器。</div>
+          <div class="meta" id="meta">状态指示：准备就绪 · 输入片名搜索选集播放，或粘贴 m3u8 / VIP 页面链接。</div>
         </div>
+
+        <!-- ===== 自建片源搜索结果 ===== -->
+        <mdui-card variant="filled" class="side-card" id="search-card" style="display:none">
+          <div class="card-head"><span class="material-icons c-primary" aria-hidden="true">search</span><span id="search-title">搜索结果</span></div>
+          <div id="search-list" class="parser-list"></div>
+          <div id="episode-wrap" style="display:none">
+            <div class="card-head" style="margin-top:6px"><span class="material-icons c-primary" aria-hidden="true">video_library</span>选集</div>
+            <div id="episode-list" class="parser-list"></div>
+          </div>
+        </mdui-card>
       </section>
 
       <aside class="sidebar">
@@ -351,8 +364,8 @@
     <p><strong>公告内容：</strong>本站支持 VIP 视频解析播放，推荐使用 m3u8 链接体验最佳效果。</p>
     <p><strong>警    告：</strong>网站的接口写在js里面，别总是想着盗用！</p>
     <p><strong>使用教程：</strong></p>
-    <p>1.使用接口一：去各大影视网站（如：爱奇艺 等）找到您想要观看的内容，复制链接并粘贴到本站；</p>
-    <p>2.使用接口二：直接输入影片名称，但是有可能会查不到，如果查不到就换接口一。</p>
+    <p>1.自建搜索（推荐）：直接输入影片名称，本站搜索片源并选集，在本站播放器直接播放；</p>
+    <p>2.VIP解析：去各大影视网站（如：爱奇艺 等）复制内容链接粘贴到本站，用解析器播放。</p>
     <p><strong>发布者：</strong>官方</p>
     <p><strong>发布时间：</strong>2025-09-15</p>
     <p class="slogan">我们的目标是做最美观、好用的VIP影视解析站！让天下资源为人民服务！</p>
@@ -366,7 +379,7 @@
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1.6.11/dist/hls.min.js"></script>
 
 <!-- ===== 业务逻辑 ===== -->
-  <script src="/assets/js/player.js?v=2026082803"></script>
+  <script src="/assets/js/player.js?v=2026082804"></script>
 
 <!-- ===== 公告栏折叠 ===== -->
 <script>

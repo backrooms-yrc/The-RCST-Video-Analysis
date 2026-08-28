@@ -17,7 +17,8 @@ MDUI 2 · Material Design 3 | Plyr | hls.js | 零后端依赖
 
 - **MD3 设计体系** — 基于 [MDUI 2](https://www.mdui.org/) 重构：顶栏、通告条、输入卡片、纸片（Chip）、对话框全部遵循 Material Design 3 规范，**本地托管**样式与字体，不依赖海外 CDN
 - **深浅色主题** — 跟随系统 + 手动切换，`localStorage` 记忆偏好，首屏防闪烁预加载
-- **智能播放** — 输入 m3u8 直连播放（原生 HLS / hls.js 自动降级）；其余输入走所选解析器
+- **自建片源搜索（主打）** — 输入片名即搜即播：聚合影视资源站采集 API（nginx 反代双源容错），选集后在本站播放器直接播 m3u8，**不依赖任何第三方解析页**
+- **智能播放** — 粘贴 m3u8 直连播放（原生 HLS / hls.js 自动降级）；粘贴 VIP 页面链接走解析器 iframe
 - **多解析器热切换** — 下拉选择 + 侧栏快速切换纸片，选中态实时同步
 - **稳定的播放器窗口** — 16:9 响应式容器（`aspect-ratio`），任意屏幕尺寸不变形、不溢出
 - **DNS 劫持对策** — 对易被污染的接口域名提供 Nginx 反代中转方案（见下文）
@@ -60,17 +61,24 @@ npx http-server -p 8000
 
 浏览器打开 `http://localhost:8000` 即可。
 
-## 🔌 解析接口管理
+## 🔌 接口与片源管理
 
-接口列表定义在 `assets/js/player.js` 顶部的 `parsers` 数组，增删改后前端自动渲染下拉与快速切换纸片：
+**自建片源搜索**（片名输入走此路径）：`player.js` 中的 `vodSources` 定义资源站采集 API，
+均经 nginx `/api/vod/<name>/` 反代（同源调用，规避 CORS 与 http 混合内容限制），
+m3u8 流由浏览器直连资源站国内 CDN，本站只转发轻量 JSON：
+
+```js
+const vodSources = [
+  { name: "非凡资源", api: "/api/vod/ff/" },     // nginx → http://api.ffzyapi.com
+  { name: "360资源", api: "/api/vod/zy360/" },   // nginx → https://360zy.com
+];
+```
+
+**VIP 链接解析器**（网页链接输入走此路径）：`parsers` 数组，当前仅保留实测可用的一条：
 
 ```js
 const parsers = [
-  { name: "接口1·虾米（本站中转）",  url: "/jx/xmflv/?url=%s" },
-  { name: "接口2·M1907（本站中转，支持 m3u8/mp4 直链）", url: "/jx/m1907/?jx=%s" },
-  { name: "接口3·七七云解析（本站中转）", url: "/jx/77flv/?url=%s" },
-  { name: "接口4·臻享视听（本站中转）", url: "/jx/aibox/?url=%s" },
-  { name: "接口5·ik9云解析（本站中转）", url: "/jx/ik9/?url=%s" },
+  { name: "接口1·臻享视听（VIP链接解析，本站中转）", url: "/jx/aibox/?url=%s" },
   // { name: "新接口", url: "/jx/xxx/?url=%s" }
 ];
 ```
@@ -78,25 +86,27 @@ const parsers = [
 要点：
 
 - URL 模板保留 `%s`，用户输入会经 `encodeURIComponent` 替换后载入 iframe；
-- 接入前请确认目标站无 `X-Frame-Options: DENY` / CSP `frame-ancestors` 限制，否则 iframe 无法嵌入；
+- 接入前请确认目标站无 `X-Frame-Options: DENY` / CSP `frame-ancestors` 限制；
+- 解析器内部 JS 若以 `document.domain` / 同源相对路径调用自家 API，入口反代会打断其内部请求（虾米、七七云即因此失败）——接入前需实测；
 - 修改 `player.js` 后记得同步更新 `index.html` 中引用的 `?v=` 缓存版本号。
 
-## 🩺 接口健康探测记录 — 2026-08-28（二次）
+## 🩺 接口健康探测记录 — 2026-08-28（三轮）
 
-首轮实测所有直连端点服务端均存活，但用户侧（国内）直连第三方解析域名**全部失败**（DNS 污染/封锁），
-唯独走本站反代的接口可用——因此**全部接口改为本站 nginx 中转**（`/jx/<name>/`）：
-
-| 接口 | 上游端点 | 状态 | 说明 |
+| 接口 | 端点 | 结论 | 现象 |
 |---|---|---|---|
-| 虾米 | `jx.xmflv.com/?url=` | ✅ 反代 | 页面解析逻辑在网易 nosdn CDN，国内可达 |
-| M1907 | `z1.m1907.top/?jx=` | ✅ 入口反代 | 跳转目标为其官方国内中转节点（nnpp:2223），保持客户端直连 |
-| 七七云解析 | `jx.77flv.cc/?url=` | ✅ 反代 | JS/WASM 在神马/字节/同程 CDN，API 为国内裸 IP |
-| 臻享视听 | `aibox.eu.org/?url=` | ✅ 反代 | `.eu.org` 域名国内普遍遭 DNS 劫持 |
-| ik9 云解析 | `yparse.ik9.cc/?url=` | ✅ 反代 | 播放器 JS 在 cdns.nmjsjs.com 国内 CDN |
+| 臻享视听 | `aibox.eu.org` → `/jx/aibox/` | ✅ 唯一保留 | 反代后正常播放且不卡顿 |
+| 虾米 | `jx.xmflv.com` → `/jx/xmflv/` | ❌ 移除 | 反代后无限加载（其 nosdn CDN 脚本回源自家 API） |
+| 七七云 | `jx.77flv.cc` → `/jx/77flv/` | ❌ 移除 | 反代后无限加载（JS 按 `document.domain` 拼 API） |
+| M1907 | `z1.m1907.top` → `/jx/m1907/` | ❌ 移除 | 播放器报"格式不支持" |
+| ik9 | `yparse.ik9.cc` → `/jx/ik9/` | ❌ 移除 | 检测代理环境后跳转不良站点 |
+| 夜幕 | `www.yemu.xyz` | ❌ 假接口 | 实为 CMS 模板技术博客，`?url=` 无效，从来不能解析 |
 
-已淘汰（供避坑）：
-- **夜幕（www.yemu.xyz）** — 经核实是"十八码"CMS 模板技术博客，`?url=` 参数完全无效，**从来不是解析接口**；
-- CK解析（域名售卖停靠）、playerjy（可疑广告脚本）、playm3u8（iframe 无限重定向循环）、parwix / jsonplayer / lskyf / 黑米 / 盘古（服务不可达）、艾豆（仅为 77flv 跳转壳）。
+结论：第三方 iframe 解析器在"入口反代"模式下多数不可靠（内部回源机制被打断），
+故转向**自建片源搜索**为主、单一可用解析器为辅的架构。
+
+其他已淘汰（供避坑）：CK解析（域名售卖停靠）、playerjy（可疑广告脚本）、
+playm3u8（iframe 无限重定向循环）、parwix / jsonplayer / lskyf / 黑米 / 盘古（服务不可达）、
+艾豆（仅为 77flv 跳转壳）。
 
 ## 🛡️ DNS 劫持与 Nginx 反代方案（重要）
 
