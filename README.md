@@ -1,8 +1,8 @@
 <div align="center">
 
-# The RCST Video Analysis
+# Current Video Analysis
 
-**若臣影视 · VIP 视频聚合解析播放站**
+**开箱即用的 VIP 视频聚合解析播放站**
 
 一个开箱即用的纯静态 VIP 视频解析前端：粘贴 m3u8 / 视频页链接 / 片名，
 自动选择直连播放（hls.js）或解析器 iframe 播放。
@@ -178,4 +178,4 @@ Safari 原生支持；其余浏览器由 hls.js 接管。仍失败时查看控�
 
 ---
 
-版权所有 © 2025 The RCST Video Analysis · [The RCST 主站枢纽](https://rcst20.dpdns.org)
+版权所有 © 2025 Current Video Analysis · [The RCST 主站枢纽](https://rcst20.dpdns.org)
