@@ -86,6 +86,40 @@
     return false;
   }
 
+  // mp4 等直链播放
+  function playDirect(url){
+    if(window._hls){ try{ window._hls.destroy(); }catch(e){} }
+    video.src = url; video.play().catch(()=>{});
+    return true;
+  }
+
+  // ===== 本站解析引擎（服务器端 yt-dlp，nginx /api/resolve/ 反代） =====
+
+  function openInParser(val){
+    meta.textContent = '状态指示：正在使用解析器加载播放窗口，请稍候...';
+    const parser = parserSelect.value || parsers[0].url;
+    iframe.src = parser.replace('%s', encodeURIComponent(val));
+    setMode('iframe');
+  }
+
+  async function resolveAndPlay(url){
+    meta.textContent = '状态指示：本站解析引擎正在解析链接（最长约20秒）...';
+    try{
+      const res = await fetch('/api/resolve/resolve?url=' + encodeURIComponent(url));
+      const j = await res.json();
+      if(j.ok && j.url){
+        meta.textContent = '状态指示：本站解析成功' + (j.title ? '《' + j.title + '》' : '') + ' · 正在加载播放';
+        const ok = j.hls ? playM3U8(j.url) : playDirect(j.url);
+        if(ok) setMode('play');
+        return;
+      }
+      meta.textContent = '状态指示：本站解析未成功（' + (j.reason || '该链接暂不支持') + '），改用解析器...';
+    }catch(e){
+      meta.textContent = '状态指示：本站解析服务无响应，改用解析器...';
+    }
+    openInParser(url);
+  }
+
   // ===== 自建片源搜索 =====
 
   // 解析苹果CMS vod_play_url："播放源1###播放源2"，源内 "集名$url#集名$url"
@@ -164,7 +198,7 @@
     meta.textContent = '状态指示：未找到片源。换个关键词试试，或粘贴 VIP 页面链接用解析器播放';
   }
 
-  // 播放逻辑：m3u8 直连 → 网页链接走解析器 → 其余按片名搜索自建片源
+  // 播放逻辑：m3u8 直连 → 网页链接走本站解析引擎(失败回退iframe解析器) → 其余按片名搜索自建片源
   function play(){
     const val = input.value.trim();
     if(!val){ meta.textContent = '状态指示：请输入链接或片名'; return; }
@@ -172,10 +206,7 @@
     if(isM3U8(val)){
       if(playM3U8(val)) setMode('play');
     } else if(/^https?:\/\//i.test(val)){
-      meta.textContent = '状态指示：正在使用解析器加载播放窗口，请稍候...';
-      const parser = parserSelect.value || parsers[0].url;
-      iframe.src = parser.replace('%s', encodeURIComponent(val));
-      setMode('iframe');
+      if(mode === 'play'){ resolveAndPlay(val); } else { openInParser(val); }
     } else {
       meta.textContent = '状态指示：正在搜索片源，请稍候...';
       searchFlow(val);

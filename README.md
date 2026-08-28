@@ -17,6 +17,7 @@ MDUI 2 · Material Design 3 | Plyr | hls.js | 零后端依赖
 
 - **MD3 设计体系** — 基于 [MDUI 2](https://www.mdui.org/) 重构：顶栏、通告条、输入卡片、纸片（Chip）、对话框全部遵循 Material Design 3 规范，**本地托管**样式与字体，不依赖海外 CDN
 - **深浅色主题** — 跟随系统 + 手动切换，`localStorage` 记忆偏好，首屏防闪烁预加载
+- **本地解析引擎** — 服务器端自部署 [yt-dlp](https://github.com/yt-dlp/yt-dlp)（`/opt/cv-resolver`，systemd 常驻 `cv-resolver`）：粘贴视频页链接 → `/api/resolve/` 返回直链 → 本站播放器直接播放，不经过任何第三方解析页；解析失败自动回退 iframe 解析器
 - **自建片源搜索（主打）** — 输入片名即搜即播：聚合影视资源站采集 API（nginx 反代双源容错），选集后在本站播放器直接播 m3u8，**不依赖任何第三方解析页**
 - **智能播放** — 粘贴 m3u8 直连播放（原生 HLS / hls.js 自动降级）；粘贴 VIP 页面链接走解析器 iframe
 - **多解析器热切换** — 下拉选择 + 侧栏快速切换纸片，选中态实时同步
@@ -60,6 +61,33 @@ npx http-server -p 8000
 ```
 
 浏览器打开 `http://localhost:8000` 即可。
+
+## 🧠 本地解析引擎（yt-dlp 自部署）
+
+播放链路对"视频页 URL"的处理顺序：**本站解析 → iframe 解析器兜底**。
+
+```
+/opt/cv-resolver/
+├── yt-dlp          # 自包含二进制（github releases 最新版）
+└── server.js       # Node 零依赖 HTTP 服务，127.0.0.1:39333
+```
+
+```bash
+# systemd 常驻（服务名 cv-resolver）
+systemctl status cv-resolver
+# yt-dlp 需定期更新以跟进站点改版
+/opt/cv-resolver/yt-dlp -U
+systemctl restart cv-resolver
+```
+
+nginx 暴露为同源接口：`/api/resolve/resolve?url=<视频页>` → `{ok,url,hls,title}`。
+
+实现要点：
+
+- 站点白名单（bilibili/iqiyi/youku/qq/mgtv/sohu 等），防止被当通用抓取代理；并发上限 2、单次 25s 超时
+- 只返回"单文件可直连播放"的流（优先 HLS，其次渐进式 mp4）；音视频分离的 DASH 流（B站高画质）不直连，回退解析器
+- https 页面无法播放 http 直链（混合内容）：仅对已知支持 https 的 CDN（优酷 pl-ali）升级协议，其余回退解析器
+- 本服务器（美国 IP）实测：**优酷 ✅**、搜狐（http-only，回退）⚠️、B站 ❌（IP 级 412 风控）、爱奇艺 ❌（extractor 失效）、腾讯 ❌（数据中心 IP 被拒）——不支持站点由前端自动回退 iframe 解析器，用户无感
 
 ## 🔌 接口与片源管理
 
